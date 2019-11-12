@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
 
     int i;
     private TextView runtimerText;
+    private TextView walktimerText;
 
 
     float Atotal;   //合成加速度の合計
@@ -85,9 +86,6 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
     private int walkTimerState = 0;
 
 
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -98,6 +96,9 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
 //        コメントアウト消すとボタンとタイマー機能
         runtimerText = findViewById(R.id.run_time);
         runtimerText.setText(dataFormat.format(0));
+
+        walktimerText = findViewById(R.id.run_time);
+        walktimerText.setText(dataFormat.format(0));
 
         runTimer = new Timer();
         walkTimer = new Timer();
@@ -120,20 +121,18 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
     @Override
     public void onClick(View v) {
         Thread thread;
-        if (v == startButton){
+        if (v == startButton) {
             stopRun = false;
             thread = new Thread((Runnable) this);
             thread.start();
 
             startRunTime = System.currentTimeMillis();
 
-        }
-        else{
+        } else {
             stopRun = true;
             runtimerText.setText(dataFormat.format(0));
         }
     }
-
 
 
     @Override
@@ -242,7 +241,6 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
                 action3.setText("歩行時間");
 
 
-
                 if (cnt < DIST_LIMIT) {             //80個になるまで配列に格納
 
                     distribute[cnt] = compACC;
@@ -343,35 +341,60 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
     public void act_recognition() {
         //行動の判別
         Thread thread;
-        if ((compACC > 17 && compACC < 35) && (sensorX < 2 && sensorX > -8) && (sensorY > 11 && sensorY < 45) && (sensorZ > -6 && sensorZ < 3) && flag != 1)  {//つまずき
+        if ((compACC > 17 && compACC < 35) && (sensorX < 2 && sensorX > -8) && (sensorY > 11 && sensorY < 45) && (sensorZ > -6 && sensorZ < 3) && flag != 1) {//つまずき
             flag = 1;
             action_cnt += 1;
             runTimerState = 0;
+            walkTimerState = 0;
 
         } else if ((compACC > 17 && compACC < 35) && (sensorX < 2 && sensorX > -8) && (sensorY > 11 && sensorY < 45) && (sensorZ > -6 && sensorZ < 3)) {
             flag = 1;
             runTimerState = 0;
+            walkTimerState = 0;
 
         } else if (0.6 < Adist && Adist < 14) {//歩く
             flag = 2;
-            if(runTimer !=)
-            runTimerState = 0;
-            if(walkTimerState == 0){
+            if (runTimer != null) {
+                if (runTimerState == 1) {
+                    runTimerState = 0;
+                    runTimer.cancel();
+                    runTimer = null;
+                    runStop();
+                    startRunTime = 0;
+                    stopRunTime = 0;
+                    runtimerText.setText(dataFormat.format(0));
+                    return;
+                }
+            }
+            if (walkTimerState == 0) {
                 walkTimerState = 1;
                 walkStart();
-                countUpWalkTimerTask = new CountUpWalkTimerTask(this,this);
+                countUpWalkTimerTask = new CountUpWalkTimerTask(this, this);
                 walkTimer = new Timer(true);
                 walkTimer.schedule(countUpWalkTimerTask, 0, 100);
             }
 
-        } else if (25 < Adist) {
-              if(runTimerState == 0){
-                  runTimerState = 1;
-                  runStart();
-                  countUpRunTimerTask = new CountUpRunTimerTask(this,this);
-                  runTimer = new Timer(true);
-                  runTimer.schedule(countUpRunTimerTask, 0, 100);
-              }
+        } else if (25 < Adist) {//走る
+            if (walkTimer != null) {
+                if (walkTimerState == 1) {
+                    walkTimerState = 0;
+                    walkTimer.cancel();
+                    walkTimer = null;
+                    walkStop();
+                    startWalkTime = 0;
+                    stopWalkTime = 0;
+                    walktimerText.setText(dataFormat.format(0));
+                    return;
+
+                }
+            }
+            if (runTimerState == 0) {
+                runTimerState = 1;
+                runStart();
+                countUpRunTimerTask = new CountUpRunTimerTask(this, this);
+                runTimer = new Timer(true);
+                runTimer.schedule(countUpRunTimerTask, 0, 100);
+            }
 //            if (!firstRun && flag == 4 || flag == 2 || flag == 5) {
 //                chronometer.setBase(SystemClock.elapsedRealtime());
 //                chronometer.start();
@@ -385,11 +408,62 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
 
             flag = 3;
 
-        }else if(sensorZ < 4.62 && sensorY < 0.55 && sensorX < -9.5){//転倒
+        } else if (sensorZ < 4.62 && sensorY < 0.55 && sensorX < -9.5) {//転倒
+            if (runTimer != null) {
+                if (runTimerState == 1) {
+                    runTimerState = 0;
+                    runTimer.cancel();
+                    runTimer = null;
+                    runStop();
+                    startRunTime = 0;
+                    stopRunTime = 0;
+                    runtimerText.setText(dataFormat.format(0));
+                    return;
+                }
+            }
+            if (walkTimer != null) {
+                if (walkTimerState == 1) {
+                    walkTimerState = 0;
+                    walkTimer.cancel();
+                    walkTimer = null;
+                    walkStop();
+                    startWalkTime = 0;
+                    stopWalkTime = 0;
+                    walktimerText.setText(dataFormat.format(0));
+                    return;
+
+                }
+            }
+
             flag = 4;
 
-
         } else if (0.5 > Adist) {//直立
+            if (runTimer != null) {
+                if (runTimerState == 1) {
+                    runTimerState = 0;
+                    runTimer.cancel();
+                    runTimer = null;
+                    runStop();
+                    startRunTime = 0;
+                    stopRunTime = 0;
+                    runtimerText.setText(dataFormat.format(0));
+                    return;
+                }
+            }
+            if (walkTimer != null) {
+                if (walkTimerState == 1) {
+                    walkTimerState = 0;
+                    walkTimer.cancel();
+                    walkTimer = null;
+                    walkStop();
+                    startWalkTime = 0;
+                    stopWalkTime = 0;
+                    walktimerText.setText(dataFormat.format(0));
+                    return;
+
+                }
+            }
+
             flag = 5;
         }
 
@@ -453,7 +527,7 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
         }
     }
 
-//    @Override
+    //    @Override
 //    public void run() {
 //        int period = 10;
 //
@@ -491,9 +565,11 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
     public void runRestart() {
         startRunTime = System.currentTimeMillis();
     }
+
     public void runreset() {
         stopRunTime = 0;
     }
+
     public void walkStart() {
         startWalkTime = System.currentTimeMillis();
     }
@@ -505,125 +581,21 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
     public void walkRestart() {
         startWalkTime = System.currentTimeMillis();
     }
+
     public void walkReset() {
         stopWalkTime = 0;
     }
 
     public String getRunDispString() {
-        nowRunTime =  System.currentTimeMillis() - (startRunTime - stopRunTime);
+        nowRunTime = System.currentTimeMillis() - (startRunTime - stopRunTime);
         long temp = nowRunTime;
         return dataFormat.format(nowRunTime);
     }
+
     public String getWalkDispString() {
-        nowWalkTime =  System.currentTimeMillis() - (startWalkTime - stopWalkTime);
+        nowWalkTime = System.currentTimeMillis() - (startWalkTime - stopWalkTime);
         long temp = nowWalkTime;
         return dataFormat.format(nowWalkTime);
     }
 
-    /*   public void act_recognition() { //ver.歩くをカウント
-           //行動の判別
-           if (2 > sensorY && 2 > sensorZ) {
-               flag = 1;
-               //TextView action1 = findViewById(R.id.action1);
-               //action1.setText("転倒回数 : " +  action_cnt);
-               //action_cnt += 1;
-
-           } else if(0.6 < Adist && Adist < 14 && flag != 2) {
-               flag = 2;
-               action_cnt += 1;
-           }else if(0.6 < Adist && Adist < 14 ){
-               flag = 2;
-           }else if(25 < Adist){
-               flag = 3;
-           }else if(0.5 > Adist){
-               flag = 4;
-           }
-
-
-           if (flag == 1) {
-               act = "転倒";
-               TextView act0 = findViewById(R.id.act0);
-               act0.setText(act);
-
-           } else if( flag == 2){
-
-               act = "歩く";
-               TextView act0 = findViewById(R.id.act0);
-               act0.setText(act);
-
-           } else if( flag == 3){
-
-               act = "走る";
-               TextView act0 = findViewById(R.id.act0);
-               act0.setText(act);
-
-           } else if (flag == 4){
-               act = "直立";
-               TextView act0 = findViewById(R.id.act0);
-               act0.setText(act);
-
-           }
-       }*/
-
-   /* public void act_recognition() {
-        //行動の判別
-
-        if (sensorZ < 4.62 && sensorY < 0.55 && sensorX < -9.5) { //転倒
-            flag = 1;
-
-        } else if (0.6 < Adist && Adist < 14) { //歩行
-            flag = 2;
-
-        } else if (25 < Adist) { //走行
-            flag = 3;
-
-            startRunTime = System.currentTimeMillis();
-
-            for(int i = 0; i < 100000; i++){
-                result +=1;
-            }
-
-            chronometer.start();
-
-        }else if( (compACC > 17 && compACC < 45) && (sensorX < 2 && sensorX > -8) && (sensorY > 11 && sensorY < 45) && (sensorZ > -6 && sensorZ < 3) && flag != 4) {//つまずき
-            flag = 4;
-            action_cnt += 1;
-
-        }else if( (compACC > 17 && compACC < 45) && (sensorX < 2 && sensorX > -8) && (sensorY > 11 && sensorY < 45) && (sensorZ > -6 && sensorZ < 3)){
-            flag =4;
-        }else if (0.5 > Adist) {
-            flag = 5;
-        }
-
-
-        if (flag == 1) {
-            act = "転倒";
-            TextView act0 = findViewById(R.id.act0);
-            act0.setText(act);
-
-        } else if (flag == 2) {
-
-            act = "歩く";
-            TextView act0 = findViewById(R.id.act0);
-            act0.setText(act);
-
-        } else if (flag == 3) {
-
-            act = "走る";
-            TextView act0 = findViewById(R.id.act0);
-            act0.setText(act);
-
-        } else if (flag == 4) {
-            act = "つまずき";
-            TextView act0 = findViewById(R.id.act0);
-            act0.setText(act);
-
-        } else if (flag == 5) {
-            act = "直立";
-            TextView act0 = findViewById(R.id.act0);
-            act0.setText(act);
-
-        }
-    }*/
 }
-
