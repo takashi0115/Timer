@@ -84,6 +84,7 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
     private CountUpWalkTimerTask countUpWalkTimerTask = null;
     private int runTimerState = 0;
     private int walkTimerState = 0;
+    private TextView tState;
 
 
     @Override
@@ -99,6 +100,7 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
 
         walktimerText = findViewById(R.id.run_time);
         walktimerText.setText(dataFormat.format(0));
+        tState = findViewById(R.id.tiredState);
 
         runTimer = new Timer();
         walkTimer = new Timer();
@@ -339,18 +341,20 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
     }
 
     public void act_recognition() {
+        Log.d("time", String.valueOf(nowRunTime));
+        Log.d("cnt", String.valueOf(action_cnt));
         //行動の判別
         Thread thread;
         if ((compACC > 17 && compACC < 35) && (sensorX < 2 && sensorX > -8) && (sensorY > 11 && sensorY < 45) && (sensorZ > -6 && sensorZ < 3) && flag != 1) {//つまずき
             flag = 1;
             action_cnt += 1;
-            runTimerState = 0;
-            walkTimerState = 0;
+//            runTimerState = 0;
+//            walkTimerState = 0;
 
         } else if ((compACC > 17 && compACC < 35) && (sensorX < 2 && sensorX > -8) && (sensorY > 11 && sensorY < 45) && (sensorZ > -6 && sensorZ < 3)) {
             flag = 1;
-            runTimerState = 0;
-            walkTimerState = 0;
+//            runTimerState = 0;
+//            walkTimerState = 0;
 
         } else if (0.6 < Adist && Adist < 14) {//歩く
             flag = 2;
@@ -524,6 +528,14 @@ public class MainActivity extends AppCompatActivity  implements  SensorEventList
             TextView act0 = findViewById(R.id.act0);
             act0.setText(act);
 
+        }
+        if (nowRunTime >= 10000 && action_cnt >= 2){
+            act = "疲労";
+            tState.setText(act);
+        }
+        if(nowWalkTime >= 10000 && action_cnt >= 1){
+            act = "不注意";
+            tState.setText(act);
         }
     }
 

@@ -12,7 +12,6 @@ public class CountUpWalkTimerTask extends TimerTask {
 
     private Handler handler;    //UIスレッドハンドラ
     private Context context;    //コンテキスト
-
     private MainActivity timeCtrl;
 
     //コンストラクタ
